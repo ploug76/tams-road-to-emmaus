@@ -341,7 +341,7 @@ let kRight=false;addEventListener('keydown',e=>{if(e.code=='KeyP')togglePause();
 addEventListener('keyup',e=>{if(e.code=='ArrowRight'||e.code=='KeyD'||e.code=='Space')holding=false});
 function togglePause(){if(state=='title')return;paused=!paused;$('pause').textContent=paused?'▶':'⏸'}
 $('pause').onclick=e=>{e.stopPropagation();togglePause()};window.musicPaused=()=>paused;
-$('help').onclick=e=>{e.stopPropagation();panel(`<h2>🍞 Tam's Road to Emmaus</h2><p>Walk the road from Jerusalem to Emmaus, just like the two disciples in Luke 24. Help the travelers you meet, answer their Bible questions, and gather around the table each evening when the bread is broken.</p><h3>Controls</h3><p><b>Hold</b> the screen to walk. <b>Quick tap</b> to hop over rocks, sheep and logs. (Keyboard: → walk, ↑ or Space hop.)</p><p>Lilies are blessings, bread & water restore your strength, and scrolls hold bonus questions. Puddles slow you down and thorns sting a little — but nobody ever gets hurt on this road!</p><p>Every kind deed and right answer makes your heart burn brighter 🔥 (Luke 24:32). Fill it up for 3 stars.</p><p>All scripture is from the King James Version. P = pause, M = mute.</p>`)};
+$('help').onclick=e=>{e.stopPropagation();panel(`<h2>🍞 Tam's Road to Emmaus</h2><p>Walk the road from Jerusalem to Emmaus, just like the two disciples in Luke 24. Help the travelers you meet, answer their Bible questions, and gather around the table each evening when the bread is broken.</p><h3>Controls</h3><p><b>Hold</b> the screen to walk. <b>Quick tap</b> to hop over rocks, sheep and logs. (Keyboard: → walk, ↑ or Space hop.)</p><p>Lilies are blessings, bread & water restore your strength, and scrolls hold bonus questions. Puddles slow you down and thorns sting a little — but nobody ever gets hurt on this road!</p><p>Every kind deed and right answer makes your heart burn brighter 🔥 (Luke 24:32). Fill it up for 3 stars.</p><p>All scripture is from the King James Version. P = pause, M = mute.</p><h3 class="gp-help">🎮 Controller</h3><p class="gp-help">Hold ▶ (D-pad, stick or RT) to walk, A jumps (and taps in mini-games), X = Space, Start pause, Select mute. Questions and menus: D-pad to pick, A to select, B to go back.</p>`)};
 // ======================= RENDER =======================
 function onResize(){VW=CW/DPR;VH=CH/DPR;const aw=VW-SAFE.l-SAFE.r,ah=VH-SAFE.t-SAFE.b;SC=Math.min(aw/LW,ah/LH);OXs=SAFE.l+(aw-LW*SC)/2;OYs=SAFE.t+(ah-LH*SC)/2}
 function skyCols(p){// p 0..1 progress (afternoon -> sunset)
@@ -763,4 +763,20 @@ window.__unlock={unlocked:un,sample:window.__SAMPLE||null,get badge(){return las
 #palbList li{min-height:30px;height:auto!important;font-size:16px!important}
 .tb{width:46px!important;height:46px!important}#mute{right:55px!important}#help{right:104px!important}
 </style>
+<!-- gamepad:start -->
+<script src="gamepad.js?v=1"></script>
+<script>
+(function(){if(typeof btn==='function'){var _b=btn;btn=function(x,y,w,h,label){var n=menuBtns.length,r=_b.apply(this,arguments);if(menuBtns.length>n&&typeof label==='string'){menuBtns[menuBtns.length-1].label=label;}if(menuBtns.length>n)menuBtns[menuBtns.length-1].__s=state;return r}}})();
+GamepadSupport.init({
+ keys:{right:'ArrowRight',rt:'ArrowRight',a:function(p){GamepadSupport.key(mini?'Space':'ArrowUp',p)},up:'ArrowUp',x:'Space',start:'KeyP',back:'KeyM'},
+ menuKeys:{a:'Enter'},
+ noRepeat:['a','x','up'],
+ ignoreSel:'#dock,#mute,#pause,#help,#inst,#ios,.tb,#dockHint',
+ backSel:'#pclose',
+ menu:function(){return !!document.querySelector('#palbOv.on,#smpLock.on')||panelOpen||paused||!!dlg||(state!=='walk'&&state!=='intro'&&!mini);},
+ items:GamepadSupport.list(function(){return (document.querySelector('#palbOv.on,#smpLock.on')||panelOpen)?[]:menuBtns;},{scale:function(){return SC},origin:function(){return [OXs,OYs]},state:function(){return state}}),
+ back:function(){if(document.querySelector('#palbOv.on,#smpLock.on')||panelOpen)return false;var b=menuBtns.filter(function(x){return /^\W*(back|close|menu|done|✕|×)\W*$/i.test(x.label||'')})[0];if(b){b.fn();return true}return false;}
+});
+</script>
+<!-- gamepad:end -->
 </body></html>
