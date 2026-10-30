@@ -370,13 +370,18 @@ function house(x,y){g.fillStyle='#e8d4a8';g.fillRect(x-50,y-110,120,110);g.fillS
 function bush(x,y,open){g.fillStyle='#3a7a2a';for(const [dx,dy,r] of [[-20,0,18],[0,-12,22],[20,0,18],[0,6,20]]){g.beginPath();g.arc(x+dx,y+dy,r,0,TAU);g.fill()}g.fillStyle='#5a9a3a';g.beginPath();g.arc(x-6,y-16,8,0,TAU);g.fill()}
 function drawLamb(x,y){g.fillStyle='#fff';for(const [dx,dy] of [[-8,0],[0,-4],[8,0],[0,4],[-4,-6],[4,-6]]){g.beginPath();g.arc(x+dx,y+dy,8,0,TAU);g.fill()}g.fillStyle='#2a2a2a';g.beginPath();g.ellipse(x+14,y-6,6,5,0,0,TAU);g.fill();g.fillRect(x-8,y+8,3,8);g.fillRect(x+6,y+8,3,8);g.fillStyle='#fff';g.fillRect(x+15,y-8,2,2)}
 function sheep(x,y,t){g.save();g.translate(x,y-14+Math.abs(Math.sin(t*6))*-2);drawLamb(0,0);g.restore()}
-function robed(x,y,o){const bob=o.walk?Math.abs(Math.sin(o.walk*PI))*2:0;g.save();g.translate(x,y-bob);if(o.alpha!=null)g.globalAlpha=o.alpha;g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(0,bob+1,16,4,0,0,TAU);g.fill();
- const l=o.walk?Math.sin(o.walk*PI*2)*4:0;g.fillStyle='#5a3a1a';g.fillRect(-7+l,-6,6,6);g.fillRect(2-l,-6,6,6);
+function robed(x,y,o){let ph=o.walk||0,amp=o.walk?1:0;if(o.wo){amp=legStep(o.wo,o.wo.vx||0,58);ph=o.wo._lp||0}const bob=amp*Math.abs(Math.sin(ph*TAU))*2;g.save();g.translate(x,y-bob);if(o.alpha!=null)g.globalAlpha=o.alpha;g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(0,bob+1,16,4,0,0,TAU);g.fill();
+ {const sn=Math.sin(ph*TAU),cs=Math.cos(ph*TAU);g.fillStyle='#5a3a1a';g.fillRect(-7+sn*5*amp,-6-Math.max(0,cs)*2.5*amp,6,6);g.fillRect(1-sn*5*amp,-6-Math.max(0,-cs)*2.5*amp,6,6)}
  g.fillStyle=o.robe;g.beginPath();g.moveTo(-10,-46);g.lineTo(10,-46);g.lineTo(15,-4);g.lineTo(-15,-4);g.fill();if(o.sash){g.fillStyle=o.sash;g.fillRect(-11,-30,22,4)}
  g.fillStyle=o.skin;g.beginPath();g.arc(0,-56,11,0,TAU);g.fill();g.fillStyle=o.head||o.robe;g.beginPath();g.arc(0,-58,13,PI*.95,TAU+.05);g.fill();g.fillRect(-13,-58,5,18);g.fillRect(8,-58,5,18);
  if(o.beard){g.fillStyle=o.beard;g.beginPath();g.arc(0,-50,8,0,PI);g.fill()}g.fillStyle='#2a1a10';g.fillRect(-5,-57,2,2);g.fillRect(3,-57,2,2);if(o.staff){g.strokeStyle='#7a5a30';g.lineWidth=3;g.beginPath();g.moveTo(14,-70);g.lineTo(14,0);g.stroke()}g.restore()}
-function drawTam(x,y,o={}){const bob=o.walk&&tam.on?Math.abs(Math.sin(o.walk*PI))*2:0;g.save();g.translate(x,y-bob);g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(0,bob+(GY-y)+1,15*(1-CL((GY-y)/120,0,.6)),4,0,0,TAU);g.fill();
- const l=o.walk&&tam.on?Math.sin(o.walk*PI*2)*5:0;g.fillStyle='#3a5a9a';g.fillRect(-7+l*.4,-18,6,16);g.fillRect(1-l*.4,-18,6,16);g.fillStyle='#fff';g.fillRect(-8+l*.4,-4,8,5);g.fillRect(0-l*.4,-4,8,5);
+/* leg rig (Grey Heart leg check, Oct 2026): stride phase from real speed, eases to standing when stopped */
+function legStep(o,v,stride){const now=performance.now()/1000,dt=Math.min(.1,Math.max(0,now-(o._lt||now)));o._lt=now;const mv=Math.abs(v)>5&&o.on!==0;
+ o._la=(o._la||0)+((mv?1:0)-(o._la||0))*Math.min(1,dt*10);if(mv)o._lp=(((o._lp||0)+v*dt/stride)%1+1)%1;else{const q=(o._lp||0)%.5;o._lp=(o._lp||0)+(q<.25?-q:.5-q)*Math.min(1,dt*8)}return o._la}
+function tamLegs(ph,amp,face){const s=Math.sin(ph*TAU);for(const side of [-1,1]){const a=side*s*.5*amp,lift=Math.max(0,side*Math.cos(ph*TAU))*amp*2.5;
+  g.save();g.translate(side*4,-19-lift);g.rotate(-a*face);g.fillStyle='#3a5a9a';g.fillRect(-3,0,6,15);g.fillStyle='#fff';g.fillRect(face>0?-3:-5,14,8,5);g.restore()}}
+function drawTam(x,y,o={}){const bob=o.live&&tam?(tam._la||0)*Math.abs(Math.sin((tam._lp||0)*TAU))*2:o.walk?Math.abs(Math.sin(o.walk*TAU))*2:0;g.save();g.translate(x,y-bob);g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(0,bob+(GY-y)+1,15*(1-CL((GY-y)/120,0,.6)),4,0,0,TAU);g.fill();
+ {let ph=0,amp=0;if(o.live&&tam){amp=legStep(tam,tam.on?tam.vx:0,58);ph=tam._lp||0}else if(o.walk){amp=1;ph=o.walk}tamLegs(ph,amp,tam&&tam.face<0?-1:1)}
  g.fillStyle='#ff6fae';g.beginPath();g.moveTo(-10,-44);g.lineTo(10,-44);g.lineTo(12,-16);g.lineTo(-12,-16);g.fill();g.fillStyle='#fff';g.fillRect(-2,-40,4,12);g.fillRect(-5,-36,10,4);// cross
  g.fillStyle='#f5d0b0';g.fillRect(-15,-42,5,16);g.fillStyle='#3a1a6a';g.fillRect(9,-38,8,11);g.fillStyle='#ffd54f';g.fillRect(12,-36,2,7);// bible
  // big hair
@@ -402,8 +407,8 @@ function render(){const t=GT;g.setTransform(DPR,0,0,DPR,0,0);g.fillStyle='#1a0c0
   g.restore()}
  // npcs
  for(const n of npcs){const x=n.x-camX;if(x<-40||x>LW+40)continue;robed(x,GY,{robe:n.t.robe,skin:n.skin,beard:n.t.n=='Old Shepherd'||n.t.n=='Lost Pilgrim'?'#ddd':0,staff:n.t.n=='Old Shepherd',sash:'#e8c860'});if(!n.done){g.fillStyle='#fff';rrect(g,x-14,GY-108,28,24,8);g.fill();g.fillStyle='#c8742c';g.font='bold 16px sans-serif';g.textAlign='center';g.fillText('!',x,GY-90)}else{g.font='14px sans-serif';g.textAlign='center';g.fillText('😊',x,GY-80)}}
- if(stranger&&stranger.on)robed(stranger.x-camX,GY,{robe:'#f2ede0',skin:'#c89a6a',head:'#8a6a4a',beard:'#5a3a1a',walk:stranger.walk,sash:'#b08a50'});
- drawTam(tam.x-camX,tam.y,{walk:tam.walk});
+ if(stranger&&stranger.on)robed(stranger.x-camX,GY,{robe:'#f2ede0',skin:'#c89a6a',head:'#8a6a4a',beard:'#5a3a1a',walk:stranger.walk,wo:stranger,sash:'#b08a50'});
+ drawTam(tam.x-camX,tam.y,{walk:tam.walk,live:1});
  if(tutorial>0&&state=='walk'){tutorial-=1/60;g.fillStyle='rgba(0,0,0,.55)';rrect(g,50,180,300,60,14);g.fill();g.fillStyle='#fff';g.font='bold 15px sans-serif';g.textAlign='center';g.fillText('HOLD to walk',200,205);g.fillText('Quick TAP to hop',200,228)}
  }
  for(const p of parts){g.globalAlpha=1-p.t/p.l;g.fillStyle=p.col;g.beginPath();g.arc(p.ui?p.x-(p.x>LW?camX:0):p.x-camX,p.y,p.r,0,TAU);g.fill()}g.globalAlpha=1;
