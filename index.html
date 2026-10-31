@@ -370,11 +370,11 @@ function house(x,y){g.fillStyle='#e8d4a8';g.fillRect(x-50,y-110,120,110);g.fillS
 function bush(x,y,open){g.fillStyle='#3a7a2a';for(const [dx,dy,r] of [[-20,0,18],[0,-12,22],[20,0,18],[0,6,20]]){g.beginPath();g.arc(x+dx,y+dy,r,0,TAU);g.fill()}g.fillStyle='#5a9a3a';g.beginPath();g.arc(x-6,y-16,8,0,TAU);g.fill()}
 function drawLamb(x,y){g.fillStyle='#fff';for(const [dx,dy] of [[-8,0],[0,-4],[8,0],[0,4],[-4,-6],[4,-6]]){g.beginPath();g.arc(x+dx,y+dy,8,0,TAU);g.fill()}g.fillStyle='#2a2a2a';g.beginPath();g.ellipse(x+14,y-6,6,5,0,0,TAU);g.fill();g.fillRect(x-8,y+8,3,8);g.fillRect(x+6,y+8,3,8);g.fillStyle='#fff';g.fillRect(x+15,y-8,2,2)}
 function sheep(x,y,t){g.save();g.translate(x,y-14+Math.abs(Math.sin(t*6))*-2);drawLamb(0,0);g.restore()}
-function robed(x,y,o){let ph=o.walk||0,amp=o.walk?1:0;if(o.wo){amp=legStep(o.wo,o.wo.vx||0,58);ph=o.wo._lp||0}const bob=amp*Math.abs(Math.sin(ph*TAU))*2;g.save();g.translate(x,y-bob);if(o.alpha!=null)g.globalAlpha=o.alpha;g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(0,bob+1,16,4,0,0,TAU);g.fill();
- {const sn=Math.sin(ph*TAU),cs=Math.cos(ph*TAU);g.fillStyle='#5a3a1a';g.fillRect(-7+sn*5*amp,-6-Math.max(0,cs)*2.5*amp,6,6);g.fillRect(1-sn*5*amp,-6-Math.max(0,-cs)*2.5*amp,6,6)}
+function robed(x,y,o){let ph=o.walk||0,amp=o.walk?1:0;if(o.wo){amp=legStep(o.wo,o.wo.vx||0,58);ph=o.wo._lp||0}/* facing check: turn 3/4 toward travel while walking */if(o.wo&&(o.wo.vx||0)<-5)o.wo._fc=-1;else if(o.wo&&(o.wo.vx||0)>5)o.wo._fc=1;const fT=o.fc||(o.wo&&o.wo._fc)||1,tn=CL(amp,0,1),T=fT*tn;const bob=amp*Math.abs(Math.sin(ph*TAU))*2;g.save();g.translate(x,y-bob);if(o.alpha!=null)g.globalAlpha=o.alpha;g.fillStyle='rgba(0,0,0,.18)';g.beginPath();g.ellipse(0,bob+1,16,4,0,0,TAU);g.fill();
+ {const sn=Math.sin(ph*TAU),cs=Math.cos(ph*TAU);g.fillStyle='#5a3a1a';g.fillRect(-7+sn*5*amp-(fT<0?2*tn:0),-6-Math.max(0,cs)*2.5*amp,6+2*tn,6);g.fillRect(1-sn*5*amp-(fT<0?2*tn:0),-6-Math.max(0,-cs)*2.5*amp,6+2*tn,6)}
  g.fillStyle=o.robe;g.beginPath();g.moveTo(-10,-46);g.lineTo(10,-46);g.lineTo(15,-4);g.lineTo(-15,-4);g.fill();if(o.sash){g.fillStyle=o.sash;g.fillRect(-11,-30,22,4)}
- g.fillStyle=o.skin;g.beginPath();g.arc(0,-56,11,0,TAU);g.fill();g.fillStyle=o.head||o.robe;g.beginPath();g.arc(0,-58,13,PI*.95,TAU+.05);g.fill();g.fillRect(-13,-58,5,18);g.fillRect(8,-58,5,18);
- if(o.beard){g.fillStyle=o.beard;g.beginPath();g.arc(0,-50,8,0,PI);g.fill()}g.fillStyle='#2a1a10';g.fillRect(-5,-57,2,2);g.fillRect(3,-57,2,2);if(o.staff){g.strokeStyle='#7a5a30';g.lineWidth=3;g.beginPath();g.moveTo(14,-70);g.lineTo(14,0);g.stroke()}g.restore()}
+ g.fillStyle=o.skin;g.beginPath();g.arc(T*3,-56,11,0,TAU);g.fill();if(tn>.02){g.beginPath();g.arc(T*3+fT*10.5,-55,2.3*tn,0,TAU);g.fill()}g.fillStyle=o.head||o.robe;g.beginPath();g.arc(-T*2,-58,13,PI*.95,TAU+.05);g.fill();for(const sd of [-1,1]){const fr=sd==fT,w=fr?5*(1-.8*tn):5+3*tn;g.fillRect(sd<0?-13-T*2:13-w-T*2+(fr?0:0),-58,w,18)}
+ if(o.beard){g.fillStyle=o.beard;g.beginPath();g.arc(T*4.5,-50,8-tn*1.5,0,PI);g.fill()}g.fillStyle='#2a1a10';for(const ex of [-5,3]){const nr=(ex>0?1:-1)==fT;g.fillRect(ex+T*(nr?5:7),-57,2*(nr?1:1-.4*tn),2)}if(o.staff){g.strokeStyle='#7a5a30';g.lineWidth=3;g.beginPath();g.moveTo(14,-70);g.lineTo(14,0);g.stroke()}g.restore()}
 /* leg rig (Grey Heart leg check, Oct 2026): stride phase from real speed, eases to standing when stopped */
 /* cadence (arm check, Oct 30 2026): steps/s from speed - ~1.75 at 75 px/s, 2.75 at full 150, capped at 3 (was 2 steps per 58px: ~5.2 at full speed) */
 function cadE(v){return v<=75?v/75*1.75:Math.min(3,1.75+(v-75)/75)}
@@ -384,15 +384,16 @@ function tamLegs(ph,amp,face){const s=Math.sin(ph*TAU);for(const side of [-1,1])
   g.save();g.translate(side*4,-19-lift);g.rotate(-a*face);g.fillStyle='#3a5a9a';g.fillRect(-3,0,6,15);g.fillStyle='#fff';g.fillRect(face>0?-3:-5,14,8,5);g.restore()}}
 function drawTam(x,y,o={}){const bob=o.live&&tam?(tam._la||0)*Math.abs(Math.sin((tam._lp||0)*TAU))*2:o.walk?Math.abs(Math.sin(o.walk*TAU))*2:0;g.save();g.translate(x,y-bob);g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(0,bob+(GY-y)+1,15*(1-CL((GY-y)/120,0,.6)),4,0,0,TAU);g.fill();
  {let ph=0,amp=0;if(o.live&&tam){amp=legStep(tam,tam.on?tam.vx:0,58);ph=tam._lp||0}else if(o.walk){amp=1;ph=o.walk}tamLegs(ph,amp,tam&&tam.face<0?-1:1)}
- g.fillStyle='#ff6fae';g.beginPath();g.moveTo(-10,-44);g.lineTo(10,-44);g.lineTo(12,-16);g.lineTo(-12,-16);g.fill();g.fillStyle='#fff';g.fillRect(-2,-40,4,12);g.fillRect(-5,-36,10,4);// cross
+ /* facing check (Oct 30 2026): when walking, head/face/torso turn 3/4 toward travel (fc), idle faces front */const tn=o.live&&tam?CL(tam._la||0,0,1):o.walk?1:0,fT=(tam&&tam.face<0?-1:1),T=fT*tn;
+ g.fillStyle='#ff6fae';g.beginPath();g.moveTo(-10,-44);g.lineTo(10,-44);g.lineTo(12,-16);g.lineTo(-12,-16);g.fill();g.fillStyle='#fff';g.fillRect(-2+T*4,-40,4,12);g.fillRect(-5+T*4+tn*1.5,-36,10-tn*3,4);// cross
  {/* arm check (Oct 30 2026): free arm is upper arm + forearm with an elbow, swinging opposite the near leg (forward forearm bends up), easing to hanging; Bible arm unchanged */
   const la=o.live&&tam?(tam._la||0):o.walk?1:0,lp=o.live&&tam?(tam._lp||0):(o.walk||0),fc=tam&&tam.face<0?-1:1,v=Math.sin(lp*TAU)*la,fw=Math.max(0,v),bk=Math.max(0,-v),ex=-12.5+fc*(fw*3-bk*3),ey=-34-fw*1,hx=ex+fc*(fw*5-bk*2),hy=ey+7-fw*4.5;
   g.strokeStyle='#f5d0b0';g.lineWidth=5;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(-12.5,-39.5);g.lineTo(ex,ey);g.lineTo(hx,hy);g.stroke()}
  g.fillStyle='#3a1a6a';g.fillRect(9,-38,8,11);g.fillStyle='#ffd54f';g.fillRect(12,-36,2,7);// bible
  // big hair
- g.fillStyle='#c8601a';g.beginPath();g.ellipse(0,-60,20,19,0,0,TAU);g.fill();g.beginPath();g.ellipse(-12,-46,7,11,0,0,TAU);g.fill();g.beginPath();g.ellipse(12,-46,7,11,0,0,TAU);g.fill();
- g.fillStyle='#f5d0b0';g.beginPath();g.arc(0,-52,10,0,TAU);g.fill();g.fillStyle='#2a1a10';g.fillRect(-4,-54,2,2.5);g.fillRect(3,-54,2,2.5);g.strokeStyle='#a03a3a';g.lineWidth=1.3;g.beginPath();g.arc(0,-50,3.5,.2,PI-.2);g.stroke();
- g.fillStyle='#e8d8b0';g.beginPath();g.ellipse(0,-68,24,5,0,0,TAU);g.fill();g.beginPath();g.ellipse(0,-71,13,7,0,PI,TAU);g.fill();g.fillStyle='#ff6fae';g.fillRect(-13,-71,26,3);
+ g.fillStyle='#c8601a';g.beginPath();g.ellipse(-T*3,-60,20,19,0,0,TAU);g.fill();for(const sd of [-1,1]){const fr=sd==fT;g.beginPath();g.ellipse(sd*12-T*(fr?4:3),-46,7*(fr?1-.7*tn:1+.25*tn),11,0,0,TAU);g.fill()}
+ g.fillStyle='#f5d0b0';g.beginPath();g.arc(T*3,-52,10,0,TAU);g.fill();if(tn>.02){g.beginPath();g.arc(T*3+fT*9.6,-51.5,2.4*tn,0,TAU);g.fill()}g.fillStyle='#2a1a10';for(const ex of [-4,3]){const nr=(ex>0?1:-1)==fT;g.fillRect(ex+T*(nr?4.5:6.5)+(nr?0:tn*.6),-54,2*(nr?1:1-.4*tn),2.5)}g.strokeStyle='#a03a3a';g.lineWidth=1.3;g.beginPath();g.arc(T*5.5,-50,3.5-tn,.2,PI-.2);g.stroke();
+ g.fillStyle='#e8d8b0';g.beginPath();g.ellipse(T*2,-68,24,5,0,0,TAU);g.fill();g.beginPath();g.ellipse(T*1.5,-71,13,7,0,PI,TAU);g.fill();g.fillStyle='#ff6fae';g.fillRect(-13+T*1.5,-71,26,3);
  g.restore()}
 function render(){const t=GT;g.setTransform(DPR,0,0,DPR,0,0);g.fillStyle='#1a0c04';g.fillRect(0,0,VW,VH);g.setTransform(DPR*SC,0,0,DPR*SC,DPR*OXs,DPR*OYs);g.save();g.beginPath();g.rect(0,0,LW,LH);g.clip();
  if(state=='bread'||state=='result'&&bread){drawBread(t)}else{drawWorld(t);
