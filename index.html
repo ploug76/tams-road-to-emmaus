@@ -380,21 +380,51 @@ function robed(x,y,o){let ph=o.walk||0,amp=o.walk?1:0;if(o.wo){amp=legStep(o.wo,
 function cadE(v){return v<=75?v/75*1.75:Math.min(3,1.75+(v-75)/75)}
 function legStep(o,v,stride){const now=performance.now()/1000,dt=Math.min(.1,Math.max(0,now-(o._lt||now)));o._lt=now;const mv=Math.abs(v)>5&&o.on!==0;
  o._la=(o._la||0)+((mv?1:0)-(o._la||0))*Math.min(1,dt*10);if(mv)o._lp=(((o._lp||0)+Math.sign(v)*dt*cadE(Math.abs(v))/2)%1+1)%1;else{const q=(o._lp||0)%.5;o._lp=(o._lp||0)+(q<.25?-q:.5-q)*Math.min(1,dt*8)}return o._la}
-function tamLegs(ph,amp,face){const s=Math.sin(ph*TAU);for(const side of [-1,1]){const a=side*s*.5*amp,lift=Math.max(0,side*Math.cos(ph*TAU))*amp*2.5;
+function tamLegs(ph,amp,face,air){const s=Math.sin(ph*TAU),tuck=air?1:0;for(const side of [-1,1]){const a=side*s*.5*amp+tuck*(.62+side*.08),lift=Math.max(0,side*Math.cos(ph*TAU))*amp*2.5+tuck*8;
   g.save();g.translate(side*4,-19-lift);g.rotate(-a*face);g.fillStyle='#3a5a9a';g.fillRect(-3,0,6,15);g.fillStyle='#fff';g.fillRect(face>0?-3:-5,14,8,5);g.restore()}}
-function drawTam(x,y,o={}){const bob=o.live&&tam?(tam._la||0)*Math.abs(Math.sin((tam._lp||0)*TAU))*2:o.walk?Math.abs(Math.sin(o.walk*TAU))*2:0;g.save();g.translate(x,y-bob);g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(0,bob+(GY-y)+1,15*(1-CL((GY-y)/120,0,.6)),4,0,0,TAU);g.fill();
- {let ph=0,amp=0;if(o.live&&tam){amp=legStep(tam,tam.on?tam.vx:0,58);ph=tam._lp||0}else if(o.walk){amp=1;ph=o.walk}tamLegs(ph,amp,tam&&tam.face<0?-1:1)}
- /* facing check (Oct 30 2026): when walking, head/face/torso turn 3/4 toward travel (fc), idle faces front */const tn=o.live&&tam?CL(tam._la||0,0,1):o.walk?1:0,fT=(tam&&tam.face<0?-1:1),T=fT*tn;
- g.fillStyle='#ff6fae';g.beginPath();g.moveTo(-10,-44);g.lineTo(10,-44);g.lineTo(12,-16);g.lineTo(-12,-16);g.fill();g.fillStyle='#fff';g.fillRect(-2+T*4,-40,4,12);g.fillRect(-5+T*4+tn*1.5,-36,10-tn*3,4);// cross
- {/* arm check (Oct 30 2026): free arm is upper arm + forearm with an elbow, swinging opposite the near leg (forward forearm bends up), easing to hanging; Bible arm unchanged */
-  const la=o.live&&tam?(tam._la||0):o.walk?1:0,lp=o.live&&tam?(tam._lp||0):(o.walk||0),fc=tam&&tam.face<0?-1:1,v=Math.sin(lp*TAU)*la,fw=Math.max(0,v),bk=Math.max(0,-v),ex=-12.5+fc*(fw*3-bk*3),ey=-34-fw*1,hx=ex+fc*(fw*5-bk*2),hy=ey+7-fw*4.5;
-  g.strokeStyle='#f5d0b0';g.lineWidth=5;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(-12.5,-39.5);g.lineTo(ex,ey);g.lineTo(hx,hy);g.stroke()}
- g.fillStyle='#3a1a6a';g.fillRect(9,-38,8,11);g.fillStyle='#ffd54f';g.fillRect(12,-36,2,7);// bible
- // big hair
- g.fillStyle='#c8601a';g.beginPath();g.ellipse(-T*3,-60,20,19,0,0,TAU);g.fill();for(const sd of [-1,1]){const fr=sd==fT;g.beginPath();g.ellipse(sd*12-T*(fr?4:3),-46,7*(fr?1-.7*tn:1+.25*tn),11,0,0,TAU);g.fill()}
- g.fillStyle='#f5d0b0';g.beginPath();g.arc(T*3,-52,10,0,TAU);g.fill();if(tn>.02){g.beginPath();g.arc(T*3+fT*9.6,-51.5,2.4*tn,0,TAU);g.fill()}g.fillStyle='#2a1a10';for(const ex of [-4,3]){const nr=(ex>0?1:-1)==fT;g.fillRect(ex+T*(nr?4.5:6.5)+(nr?0:tn*.6),-54,2*(nr?1:1-.4*tn),2.5)}g.strokeStyle='#a03a3a';g.lineWidth=1.3;g.beginPath();g.arc(T*5.5,-50,3.5-tn,.2,PI-.2);g.stroke();
- g.fillStyle='#e8d8b0';g.beginPath();g.ellipse(T*2,-68,24,5,0,0,TAU);g.fill();g.beginPath();g.ellipse(T*1.5,-71,13,7,0,PI,TAU);g.fill();g.fillStyle='#ff6fae';g.fillRect(-13+T*1.5,-71,26,3);
- g.restore()}
+function tamBlink(now){const u=now%4.2;if(u<3.72||u>3.94)return 1;const k=(u-3.72)/.22;return k<.5?1-k*2:(k-.5)*2}
+/* Drawn Tam, not a photo: short silver-blonde pixie, warm smile, hoop earring, light blue collar. Pink cross and Bible stay the road clothes. */
+function tamLikeness(ph,amp,T,fT,tn,now){
+  const step=Math.sin(ph*TAU),sway=step*amp*1.8+Math.sin(now*1.6)*.55,fold=Math.sin(ph*TAU+.4)*amp*1.6+Math.sin(now*1.8)*.45;
+  g.fillStyle='#c5d8ea';g.beginPath();g.ellipse(T*1.1+fold*.15,-45.5,12.5,5.4,fold*.04,0,TAU);g.fill();
+  g.fillStyle='#e7f2f8';g.beginPath();g.ellipse(T*.4,-47.2,9,3.2,0,0,TAU);g.fill();
+  g.fillStyle='#9eb8cc';g.beginPath();g.ellipse(-7+fold*.35,-44.2,4.2,2.6,.5,0,TAU);g.fill();g.beginPath();g.ellipse(6-fold*.25,-43.6,3.6,2.2,-.4,0,TAU);g.fill();
+  g.save();g.translate(T*2.4,-57);g.rotate((1-Math.min(1,amp))*Math.sin(now*1.25)*.035+sway*.012);
+  g.fillStyle='#6e6256';g.strokeStyle='#4a433c';g.lineWidth=1.15;g.beginPath();g.ellipse(0,-5,14.6,11.2,0,0,TAU);g.fill();g.stroke();
+  const spikes=[[-11,-13,2.1,6.4,'#8f8274',-.95],[-6,-17,2.0,7.2,'#d9d4cc',-.35],[-1,-18,2.2,7.6,'#f7f5f1',-.04],[5,-17,1.9,7.0,'#e6d3a4',.28],[10,-14,2.0,6.2,'#c8c2b8',.72],[-14,-7,2.2,4.6,'#7d6b58',-1.15],[13,-7,2.1,4.4,'#a89880',1.1],[2,-15,2.3,5.4,'#efe6c8',.12],[-8,-11,2.4,4.2,'#b7aea4',-.5],[7,-12,2.2,4.0,'#cfc6b8',.45]];
+  spikes.forEach((b,i)=>{const w=Math.sin(now*2.5+i*.85+ph*TAU)*(0.4+amp*1.05);g.save();g.translate(b[0]+w*.4,b[1]);g.rotate(b[5]+w*.06);g.fillStyle=b[4];g.beginPath();g.ellipse(0,0,b[2],b[3],0,0,TAU);g.fill();g.restore()});
+  for(const sd of [-1,1]){const near=sd===fT,show=near?1:1-tn*.55;if(show<.08)continue;g.save();g.globalAlpha=show;g.translate(sd*(12.4-(near?0:tn*1.6)),1.2);g.fillStyle='#e7b498';g.beginPath();g.ellipse(0,0,3.1,4.5,sd*-.15,0,TAU);g.fill();g.strokeStyle='#eef2f6';g.lineWidth=1.45;g.lineCap='round';g.beginPath();g.arc(0,2.4,3.15,.2,PI-.15);g.stroke();g.strokeStyle='#9aa3ae';g.lineWidth=.7;g.beginPath();g.arc(0,2.4,3.15,.45,PI-.4);g.stroke();g.restore()}
+  g.fillStyle='#e7b498';g.beginPath();g.ellipse(fT*tn*1.1,1.6,12.2,13.5,0,0,TAU);g.fill();
+  g.fillStyle='#f6d0b8';g.beginPath();g.ellipse(fT*tn*.5,.7,10.6,12.2,0,0,TAU);g.fill();
+  g.fillStyle='rgba(226,140,120,.42)';g.beginPath();g.ellipse(-6.2,4.4,3.5,2.2,.2,0,TAU);g.fill();g.beginPath();g.ellipse(6.5,4.4,3.5,2.2,-.2,0,TAU);g.fill();
+  g.fillStyle='rgba(150,84,58,.5)';[[-4.2,3.2],[5.6,2.6],[3.1,5.2],[-7.1,5.6]].forEach(p=>{g.fillRect(p[0],p[1],1.15,1.15)});
+  g.strokeStyle='#8d6b4a';g.lineWidth=1.4;g.lineCap='round';g.beginPath();g.moveTo(-9.2,-6.4);g.quadraticCurveTo(-5.2,-8.6,-1.5,-6.5);g.stroke();g.beginPath();g.moveTo(1.7,-6.5);g.quadraticCurveTo(6.1,-8.7,9.6,-6.3);g.stroke();
+  const blink=tamBlink(now);
+  const eye=(cx,side)=>{const nr=(side>0?1:-1)===fT,open=Math.max(.08,blink)*(nr?1:1-.3*tn);g.save();g.translate(cx,-2.1);g.scale(1,open*.72);g.fillStyle='#fbf8f3';g.beginPath();g.ellipse(0,.2,3.8,2.55,0,0,TAU);g.fill();g.fillStyle='#6b4630';g.beginPath();g.ellipse(side*.28,.45,1.75,1.75,0,0,TAU);g.fill();g.fillStyle='#2a1a12';g.beginPath();g.arc(side*.5,.6,.95,0,TAU);g.fill();g.fillStyle='#fff';g.beginPath();g.arc(-.75,-.35,.62,0,TAU);g.fill();g.restore();g.strokeStyle='#7a4e3c';g.lineWidth=1.2;g.beginPath();g.moveTo(cx-3.7,-2.5);g.quadraticCurveTo(cx,-2.5-1.9*open,cx+3.7,-2.6);g.stroke();if(open>.4){g.strokeStyle='rgba(120,72,52,.7)';g.lineWidth=.85;const d=cx<0?-1:1;g.beginPath();g.moveTo(cx+d*3.5,-1.5);g.lineTo(cx+d*5.8,-2.7);g.stroke()}};
+  eye(-4.7,-1);eye(5.3,1);
+  g.strokeStyle='#d7a08c';g.lineWidth=1.15;g.beginPath();g.moveTo(fT*tn*1.4,-1);g.quadraticCurveTo(fT*tn*2.4+1.1,1.4,fT*tn*1.3,3.4);g.stroke();
+  g.strokeStyle='rgba(168,96,74,.55)';g.lineWidth=.95;g.beginPath();g.moveTo(-3.3,3.5);g.quadraticCurveTo(-6.6,5.4,-5.7,7.6);g.stroke();g.beginPath();g.moveTo(3.5,3.5);g.quadraticCurveTo(6.8,5.4,5.9,7.6);g.stroke();
+  const w=7.6;g.fillStyle='#c45364';g.beginPath();g.moveTo(-w,6.3);g.quadraticCurveTo(0,11.8,w,6.3);g.quadraticCurveTo(0,8.2,-w,6.3);g.fill();
+  g.fillStyle='#fffaf6';g.beginPath();g.moveTo(-w*.74,6.4);g.quadraticCurveTo(0,7.9,w*.74,6.4);g.quadraticCurveTo(0,8.6,-w*.74,6.4);g.fill();
+  g.strokeStyle='rgba(186,176,166,.95)';g.lineWidth=.55;g.beginPath();g.moveTo(-1.9,6.7);g.lineTo(-1.9,7.8);g.moveTo(1.3,6.7);g.lineTo(1.3,7.9);g.stroke();
+  g.strokeStyle='#a84454';g.lineWidth=1.1;g.beginPath();g.moveTo(-w*.92,6.05);g.quadraticCurveTo(0,5.2,w*.92,6.05);g.stroke();
+  [[-8,-8,4.4,3.3,'#e7e2d8',-.32],[-2,-10.2,4.8,2.9,'#f7f4ee',-.05],[5,-9.2,4.3,2.7,'#e6d4ae',.26],[10,-5.5,3.5,3.1,'#c9b48e',.52],[-12,-3.6,3.3,3.5,'#a08b72',-.62]].forEach((b,i)=>{const wv=Math.sin(now*2.3+i+ph*TAU)*(0.3+amp*.85);g.save();g.translate(b[0]+wv*.45,b[1]);g.rotate(b[5]+wv*.04);g.fillStyle=b[4];g.beginPath();g.ellipse(0,0,b[2],b[3],0,0,TAU);g.fill();g.restore()});
+  g.restore()}
+function drawTam(x,y,o={}){
+  let ph=0,amp=0;if(o.live&&tam){amp=legStep(tam,tam.on?tam.vx:0,58);ph=tam._lp||0}else if(o.walk){amp=1;ph=o.walk}
+  const now=performance.now()/1000,air=!!(o.live&&tam&&tam.on===0);
+  const bob=amp*Math.abs(Math.sin(ph*TAU))*2+(1-Math.min(1,amp))*Math.sin(now*2.15)*.9;
+  g.save();g.translate(x,y-bob);g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.ellipse(0,bob+(GY-y)+1,15*(1-CL((GY-y)/120,0,.6)),4,0,0,TAU);g.fill();
+  const face=tam&&tam.face<0?-1:1;tamLegs(ph,amp,face,air);
+  /* facing check: while walking, head, face, hair and collar turn 3/4 toward travel; idle faces front */
+  const tn=o.live&&tam?CL(tam._la||0,0,1):o.walk?1:0,fT=face,T=fT*tn;
+  g.fillStyle='#ff6fae';g.beginPath();g.moveTo(-10,-44);g.lineTo(10,-44);g.lineTo(12,-16);g.lineTo(-12,-16);g.fill();g.fillStyle='#fff';g.fillRect(-2+T*4,-40,4,12);g.fillRect(-5+T*4+tn*1.5,-36,10-tn*3,4);
+  /* arm check: free arm is upper arm + forearm with an elbow, swinging opposite the near leg, easing to hanging; Bible arm unchanged */
+  const la=o.live&&tam?(tam._la||0):o.walk?1:0,lp=o.live&&tam?(tam._lp||0):(o.walk||0),v=Math.sin(lp*TAU)*la,fw=Math.max(0,v),bk=Math.max(0,-v),ex=-12.5+face*(fw*3-bk*3),ey=-34-fw*1,hx=ex+face*(fw*5-bk*2),hy=ey+7-fw*4.5;
+  g.strokeStyle='#f0c4a6';g.lineWidth=5;g.lineCap='round';g.lineJoin='round';g.beginPath();g.moveTo(-12.5,-39.5);g.lineTo(ex,ey);g.lineTo(hx,hy);g.stroke();g.fillStyle='#f3c7ad';g.beginPath();g.arc(hx,hy,3.2,0,TAU);g.fill();
+  g.fillStyle='#3a1a6a';g.fillRect(9,-38,8,11);g.fillStyle='#ffd54f';g.fillRect(12,-36,2,7);
+  tamLikeness(ph,amp,T,fT,tn,now);
+  g.restore()}
 function render(){const t=GT;g.setTransform(DPR,0,0,DPR,0,0);g.fillStyle='#1a0c04';g.fillRect(0,0,VW,VH);g.setTransform(DPR*SC,0,0,DPR*SC,DPR*OXs,DPR*OYs);g.save();g.beginPath();g.rect(0,0,LW,LH);g.clip();
  if(state=='bread'||state=='result'&&bread){drawBread(t)}else{drawWorld(t);
  // obstacles
